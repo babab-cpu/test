@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Maymun Tıklama - Arin Dilsiz</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: linear-gradient(180deg, #f9f7f0, #efe7d9);
+    color: #2e2e2e;
+    margin: 0;
+  }
+  .wrap {
+    max-width: 1100px;
+    margin: 28px auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+  }
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    color: #8b5e3c;
+  }
+  .score-card {
+    background: #fffdf8;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .banana-btn {
+    width: 140px;
+    height: 140px;
+    border-radius: 16px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transition: transform 0.08s ease;
+  }
+  .banana-btn:active { transform: scale(0.95); }
+  .banana-btn img { width: 100%; height: 100%; object-fit: cover; }
+  .stats { flex: 1; }
+  .stat { font-weight: 700; font-size: 20px; }
+  .sub { font-size: 13px; color: #7b6b5d; margin-top: 6px; }
+  .right-panel { display: flex; flex-direction: column; gap: 12px; }
+  .panel {
+    background: #fffdf8;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+  }
+  .store-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fff, #fbf7f0);
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+  .item img {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .item button {
+    background: #8b5e3c;
+    color: white;
+    border: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .small { font-size: 12px; color: #7b6b5d; }
+  .pop {
+    position: absolute;
+    font-weight: 700;
+    animation: pop 700ms ease-out forwards;
+    pointer-events: none;
+    color: #6a3c00;
+  }
+  @keyframes pop {
+    0% { opacity: 1; transform: translateY(0) scale(1.0); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.15); }
+  }
+  footer { grid-column: 1 / -1; text-align: center; font-size: 13px; color: #7b6b5d; margin-top: 8px; }
+  @media(max-width:900px){ .wrap{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="maymun.png" width="42" height="42" style="border-radius:50%" alt="maymun">
+    <h1>Maymun Tıklama — Arin Dilsiz</h1>
+  </header>
+
+  <section class="score-card">
+    <div style="position:relative">
+      <div id="bananaBtn" class="banana-btn">
+        <img src="maymun.png" alt="maymun">
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat" id="bananas">0</div>
+      <div class="sub">Toplam Muz — <span id="cps">0</span> CPS</div>
+      <div class="sub">Tık Gücü: <span id="clickPower">1</span></div>
+    </div>
+  </section>
+
+  <aside class="right-panel">
+    <div class="panel">
+      <strong>Mağaza</strong>
+      <div class="store-list" id="store"></div>
+    </div>
+
+    <div class="panel">
+      <strong>Yükseltmeler</strong>
+      <button id="upgradeClick" style="margin-top:8px;">Tıklama +1 (maliyet: <span id="upClickCost">50</span>)</button>
+      <button id="resetBtn" style="margin-top:8px;">Kaydı Sıfırla</button>
+    </div>
+  </aside>
+
+  <footer>Maymun Tıklama — Arin Dilsiz 🐒</footer>
+</div>
+
+<script>
+const state = {
+  bananas: 0,
+  clickPower: 1,
+  cps: 0,
+  totalClicks: 0,
+  units: [
+    { id:'little', name:'Küçük Maymun', baseCost:15, cost:15, cps:0.1, count:0 },
+    { id:'banana-farm', name:'Orangutan', baseCost:100, cost:100, cps:1, count:0 },
+    { id:'orangutan', name:'Büyük Götlü Zenci', baseCost:900, cost:900, cps:8, count:0 },
+    { id:'anatolia', name:'Anadolu Maymunu', baseCost:6000, cost:6000, cps:47, count:0 },
+    { id:'arin', name:'Arin Dilsiz', baseCost:100000, cost:100000, cps:260, count:0 },
+  ]
+};
+
+const bananasEl=document.getElementById('bananas');
+const cpsEl=document.getElementById('cps');
+const clickPowerEl=document.getElementById('clickPower');
+const storeEl=document.getElementById('store');
+const bananaBtn=document.getElementById('bananaBtn');
+const upClickCostEl=document.getElementById('upClickCost');
+
+function save(){localStorage.setItem('monkeyClickerV2',JSON.stringify(state));}
+function load(){const s=localStorage.getItem('monkeyClickerV2');if(s){Object.assign(state,JSON.parse(s));}}
+load();
+
+function scaleCost(c){return Math.ceil(c*1.15);}
+function computeCps(){state.cps=+state.units.reduce((a,u)=>a+u.cps*u.count,0).toFixed(2);}
+
+function renderStore(){
+  storeEl.innerHTML='';
+  state.units.forEach(u=>{
+    const item=document.createElement('div');item.className='item';
+    item.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="maymun.png" alt="maymun">
+        <div><strong>${u.name}</strong><div class="small">${u.count} adet • ${u.cps} CPS</div></div>
+      </div>
+      <div style="text-align:right">
+        <div>${u.cost.toLocaleString()} 🍌</div>
+        <button data-id="${u.id}">Satın Al</button>
+      </div>`;
+    item.querySelector('button').onclick=()=>buyUnit(u.id);
+    storeEl.appendChild(item);
+  });
+}
+
+function updateUI(){
+  bananasEl.textContent=Math.floor(state.bananas);
+  cpsEl.textContent=state.cps.toFixed(2);
+  clickPowerEl.textContent=state.clickPower;
+  upClickCostEl.textContent=upgradeClickCost();
+  renderStore();
+}
+
+function buyUnit(id){
+  const u=state.units.find(x=>x.id===id);
+  if(state.bananas>=u.cost){
+    state.bananas-=u.cost;
+    u.count++;
+    u.cost=scaleCost(u.cost);
+    computeCps();
+    save();
+    updateUI();
+  }
+}
+
+function onClick(e){
+  state.bananas+=state.clickPower;
+  state.totalClicks++;
+  pop(e.clientX,e.clientY,'+'+state.clickPower);
+  save();updateUI();
+}
+
+function pop(x,y,t){
+  const d=document.createElement('div');
+  d.className='pop';d.style.left=(x-10)+'px';d.style.top=(y-30)+'px';
+  d.textContent=t+' 🍌';
+  document.body.appendChild(d);setTimeout(()=>d.remove(),700);
+}
+
+function upgradeClickCost(){return 50*Math.pow(2,state.clickPower-1);}
+function upgradeClick(){
+  const cost=upgradeClickCost();
+  if(state.bananas>=cost){
+    state.bananas-=cost;
+    state.clickPower++;
+    save();updateUI();
+  }
+}
+
+bananaBtn.onclick=onClick;
+document.getElementById('upgradeClick').onclick=upgradeClick;
+document.getElementById('resetBtn').onclick=()=>{if(confirm('Kaydı sıfırlamak istiyor musun?')){localStorage.removeItem('monkeyClickerV2');location.reload();}};
+
+function tick(){
+  state.bananas+=state.cps/20;
+  updateUI();
+}
+setInterval(tick,50);
+
+computeCps();updateUI();
+</script>
+</body>
+</html>
